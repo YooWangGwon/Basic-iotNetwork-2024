@@ -1,3 +1,8 @@
+// title : hello_client.c
+// date : 2024-06-11
+// desc : 클리이언트 소켓 구현
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

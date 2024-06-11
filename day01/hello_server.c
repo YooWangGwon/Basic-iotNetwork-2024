@@ -1,7 +1,7 @@
-/* title : hello_server.c
-date : 2024-06-11
-desc : "Hello world!"서버 프로그램 구현
-*/
+// title : hello_server.c
+// date : 2024-06-11
+// desc : "Hello world!"서버 프로그램 구현
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,9 +35,9 @@ int main(int argc, char *argv[])
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-	serv_addr.sin_port=htons(atoi(argv[1]));
-
+	serv_addr.sin_addr.s_addr=htonl(INADDR_ANY); // htonl : TCP/IP에서 사용되는 Network-Byte-Order(Big Endian) 값을 리턴
+	serv_addr.sin_port=htons(atoi(argv[1])); // atoi:문자 스트링을 정수로 변환
+											 // htons : 데이터를 네트워크 바이트 순서로 변경
 	if(bind(serv_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) == -1)
 		error_handling("bind() error");
 
