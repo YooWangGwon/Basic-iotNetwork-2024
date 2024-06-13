@@ -1,3 +1,7 @@
+// title : echo_client2.c
+// date : 2024-06-12
+// desc : Iterative 에코 클라이언트 개선
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

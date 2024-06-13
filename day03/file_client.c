@@ -1,6 +1,6 @@
-// title : echo_client.c
-// date : 2024-06-12
-// desc : Iterative 에코 클라이언트
+// title : file_client.c
+// date : 2024-06-13
+// desc : Half-close 클라이언트
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,14 +9,16 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-#define BUF_SIZE 1024
+#define BUF_SIZE 1030
 void error_handling(char *message);
 
 int main(int argc, char *argv[])
 {
-	int sock;
-	char message[BUF_SIZE];
-	int str_len;
+	int sd;
+	FILE *fp;
+
+	char buf[BUF_SIZE];
+	int read_cnt;
 	struct sockaddr_in serv_adr;
 
 	if(argc != 3) {
@@ -24,8 +26,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	sock = socket(PF_INET, SOCK_STREAM, 0);
-	if(sock == -1)
+	fp = fopen("receive.dat", "wb");
+	sd = socket(PF_INET, SOCK_STREAM, 0);
+	if(sd == -1)
 		error_handling("socket() error!");
 
 	memset(&serv_adr, 0, sizeof(serv_adr));
@@ -33,25 +36,18 @@ int main(int argc, char *argv[])
 	serv_adr.sin_addr.s_addr = inet_addr(argv[1]);
 	serv_adr.sin_port = htons(atoi(argv[2]));
 
-	if(connect(sock, (struct sockaddr*)&serv_adr, sizeof(serv_adr)) == -1)
+	if(connect(sd, (struct sockaddr*)&serv_adr, sizeof(serv_adr)) == -1)
 		error_handling("connect() error!");
 	else
 		puts("Connected........");
 
-	while(1)
-	{
-		fputs("Input message(Q to quit): ", stdout);
-		fgets(message, BUF_SIZE, stdin);
+	while((read_cnt = read(sd, buf, BUF_SIZE)) != 0)
+		fwrite((void*)buf, 1, read_cnt, fp);
 
-		if(!strcmp(message, "q\n") || !strcmp(message,"Q\n"))
-			break;
-
-		write(sock, message, strlen(message));
-		str_len = read(sock, message, BUF_SIZE-1);
-		message[str_len] = 0;
-		printf("Messgae form server : %s", message);
-	}
-	close(sock);
+	puts("Received file data");
+	write(sd, "Thank you", 10);
+	fclose(fp);
+	close(sd);
 	return 0;
 }
 
