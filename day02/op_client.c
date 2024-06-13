@@ -1,3 +1,7 @@
+// title : op_client.c
+// date : 2024-06-12
+// desc : 계산기 클라이언트 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

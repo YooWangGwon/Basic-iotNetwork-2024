@@ -1,3 +1,7 @@
+// title : uecho_server.c
+// date : 2024-06-13
+// desc : UDP 기반 에코 서버
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

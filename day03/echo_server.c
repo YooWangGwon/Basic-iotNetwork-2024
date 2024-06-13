@@ -1,6 +1,6 @@
-// title : op_server.c
-// date : 2024-06-12
-// desc : 계산기 서버
+// title : echo_server.c
+// date : 2024-06-13
+// desc : Iterative 에코 서버
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,18 +10,14 @@
 #include <sys/socket.h>
 
 #define BUF_SIZE 1024
-#define OPSZ 4
-
 void error_handling(char *message);
-int calculate(int opnum, int opnds[], char oprator);
-
 
 int main(int argc, char *argv[])
 {
 	int serv_sock, clnt_sock;
-	char opinfo[BUF_SIZE];
-	int result, opnd_cnt, i;
-	int recv_cnt, recv_len;
+	char message[BUF_SIZE];
+	int str_len, i;
+
 	struct sockaddr_in serv_adr, clnt_adr;
 	socklen_t clnt_adr_sz;
 
@@ -49,40 +45,21 @@ int main(int argc, char *argv[])
 
 	for(i=0; i<5; i++)
 	{
-		opnd_cnt = 0;
 		clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, &clnt_adr_sz);
-		read(clnt_sock, &opnd_cnt, 1);
-
-		recv_len = 0;
-		while((opnd_cnt*OPSZ+1)>recv_len)
-		{
-			recv_cnt = read(clnt_sock, &opinfo[recv_len], BUF_SIZE-1);
-			recv_len += recv_cnt;
+		if(clnt_sock == -1)
+			error_handling("accept() error!");
+		else
+			printf("Connected client %d \n", i+1);
+		while((str_len = read(clnt_sock, message, BUF_SIZE))!=0){
+			printf("Message from client : %s", message);
+			write(clnt_sock, message, str_len);
 		}
-		result = calculate(opnd_cnt, (int*)opinfo, opinfo[recv_len-1]);
-		write(clnt_sock, (char*)&result, sizeof(result));
+
 		close(clnt_sock);
 	}
+
 	close(serv_sock);
 	return 0;
-}
-
-int calculate(int opnum, int opnds[], char op)
-{
-	int result = opnds[0], i;
-	switch(op)
-	{
-		case '+':
-			for(i=1; i<opnum; i++) result += opnds[i];
-			break;
-		case '-':
-			for(i=1; i<opnum; i++) result -= opnds[i];
-			break;
-		case '*':
-			for(i=1; i<opnum; i++) result *= opnds[i];
-			break;
-	}
-	return result;
 }
 
 void error_handling(char *message)

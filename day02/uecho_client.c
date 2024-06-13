@@ -1,3 +1,7 @@
+// title : uecho_client.c
+// date : 2024-06-12
+// desc : UDP 기반 에코 클라이언트
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
