@@ -238,9 +238,12 @@
             <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet003.png">
 
             - LINK 계층
+                - 물리적인 영역의 표준화에 대한 결과(물리적인 연결)
+                - LAN, WAN, MAN과 같은 네트워크 표준과 관련된 프로토콜을 정의하는 영역.
+
             - IP 계층
                 - 목적지로 데이터를 전송하기 위한 경로
-                - 하나으 ㅣ데이터 패킷이 전송되는 과정에만 중점
+                - 하나의 데이터 패킷이 전송되는 과정에만 중점
                 - IP 자체는 비 연결지향적이며 신뢰할 수 없는 프로토콜이기
                 - 데이터 손실 또는 오류 발생 문제 가능성
 
@@ -254,8 +257,9 @@
         - TCP 서버에서의 기본적인 함수 호출 순서
             - socket() -> bind() -> listen() -> accept() -> read()/write() -> close()
 
-        - 연결요청 대기 상태(listen 함수)
-            - 클라이언트가 서버의 서버  ㅡ  소켓에 연결요청을 하고 연결요청 대기큐에서 대기상태로 진입
+        - 연결요청 대기 상태로의 진입(listen 함수)
+            - 클라이언트가 서버의 서버 소켓에 연결요청을 하고 연결요청 대기큐에서 대기상태로 진입
+
             ```c
             #include <sys/socket.h>
             int listen(int sock, int backlog);
@@ -267,6 +271,7 @@
         - 클라이언트의 연결 요청 수락(**accept 함수**)
             - '연결요청 대기 큐'에서 대기중인 클라이언트의 연결요청 수락
             - 호출 성공 시 내부적으로 데이터 입출력에 사용할  클라이언트 소켓을 생성하고, 그 소켓의 파일 디스크립터 반환
+
             ```c
             #include <sys/socket.h>
             int accept(int sock, struct sockaddr * addr, socklen_t * addrlen);
@@ -279,6 +284,7 @@
         - TCP 클라이언트의 기본적인 함수 호출 순서
             - socket() -> connect() -> read()/write() -> close()
             - connect 함수
+
             ```c
             #include <sys/socket.h>
             int connect(int sock, struct sockaddr * servaddr, socklen_t addrlen);
@@ -297,26 +303,174 @@
         - 입출력 버퍼
             - write 함수가 호출되는 순간 데이터는 출력 버퍼로 이동
             - read 함수가 호출되는 순간 입력버퍼에 저장된 데이터를 읽어들임
-            - 입력 버퍼으 ㅣ크기를 초과하는 분량의 데이터 전송은 발생하지 않음
+            - 입력 버퍼의 크기를 초과하는 분량의 데이터 전송은 발생하지 않음
 
         - TCP 내부의 동작원리
             - 상대 소켓과의 연결(Three-way handshaking)
             - 상대 소켓과의 데이터 송수신
             - 상대 소켓과의 연결 종료
 
+        <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet005.png">
+
 - UDP 기반 서버/클라이언트
     - UDP에 대한 이해
         - TCP와 달리 흐름제어를 하지 않는 데이터 전송 방식
+
     - UDP 기반 서버/클라이언트의 구현
         - UDP에서는 서버와 클라이언트의 연결설정 과정이 필요없음
         - 서버건 클라이언트 건 하나의 소켓만 있으면 됨
         - 데이터를 전송할 때 마다 반드시 목적지의 주소정보를 별도로 추가해야함
         - sendto 함수
+
         ```c
         #include <sys/socket.h>
         ssize_t sendto(int sock, void *buff, size_t nbytes, int flags, struct sockaddr *to, socklen_t addr len);
         // 성공 시 전송된 바이트 수, 실패 시 -1 반환
         // sock : 데이터 전송에 사용될 UDP 소켓의 파일 디스크립터
         // buff : 전송할 데이터가 저장된 버퍼의 주소값
-        
+        // nbytes : 전송할 데이터 크기
+        // flags : 옵션 지정에 필요한 매개변수
+        // to : 목적지 주소정보를 담고있는 sockaddr 구조체 변수
+        // addrlen : to로 전달하는 구조체 변수 크기 지정
         ```
+        - recvfrom함수
+
+        ```c
+        #include <sys/socket.h>
+        ssize_t sendto(int sock, void *buff, size_t nbytes, int flags, struct sockaddr *from, socklen_t addr len);
+        // 성공 시 수신한 바이트 수, 실패 시 -1 반환
+        // sock : 데이터 수신에 사용될 UDP 소켓의 파일 디스크립터
+        // buff : 데이터 수신에 사용될 저장된 버퍼의 주소값
+        // nbytes : 수신할 최대 바이트 수
+        // flags : 옵션 지정에 필요한 매개변수
+        // from : 발신지 주소정보를 담고있는 sockaddr 구조체 변수
+        // addrlen : from으로 전달하는 구조체 변수 크기 지정   
+        ```
+
+
+## 3일차(24.06.13)
+- UDP 기반 서버/클라이언트
+    - UDP의 데이터 송수신 특성과 connect 함수 호출
+        - 데이터 송수신 과정에서 입력함수의 호출횟수와 출력함수의 호출횟수가 완벽하게 일치해야함
+        - connected 소켓 : 목적지 정보가 등록되어 있는 소켓
+        - unconnected 소켓 : 목적지 정보가 등록되어 있지 않은 소켓
+        - UDP 소켓은 기본적으로 unconnected 소켓이나 하나의 호스트와 오랜 시간 데이터를 송수신할 경우 connected  소켓으로 만드는 것이 효율적
+        - connected UDP 소켓은 sendto, recvfrom 함수가 아닌 write, read 함수로도 데이터 송수신 가능    
+
+- 소켓의 종료
+    - TCP 기반의 Half-close
+        - 일반적인 연결종료의 문제점
+            - Linux의 close함수호출과 Window의 closesocket 함수호출은 완전종료를 의미
+            - Half-close : 전송 가능, 수신 불가능 or 전송 불가능, 수신 가능
+            - shutdown 함수
+
+            ```c
+            #include <sys/socket.h>
+            int shutdown(int sock, int howto);
+            // 성공 시 0, 성공 시 -1 반환
+            // sock : 종료할 소켓의 파일 디스크립터
+            // howto : 종료방법
+            //SHUT_RD(입력 스트림 종료), SHUT_WR(출력 스트림 종료), SHUT_RDWR(입출력 스트림 종료)
+            ```
+
+- 도메인과 인터넷 주소
+    - Domain Name System
+        - 도메인 이름(Domain Name) : 네트워크 상 컴퓨터를 식별하는 호스트명, 도메인 레지스트리에게서 등록된 이름(가상의 주소)
+        - DNS(Domain Name System) : 도메인 이름을 IP 주소로 변환하는 것을 담당(가상의 주소 -> 실제 주소)
+
+    - IP주소와 도메인 이름 사이의 변환
+        - 도메인 이름의 필요성
+            - IP주소는 도메인 이름에 비해 상대적으로 변경될 확률이 높음
+            - 도메인 이름은 등록되면 평생 유지됨
+            - 도메인 이름을 근거로 IP 주소를 얻어오면 서버의 IP주소로 부터 클라이언트 프로그램은 자유로워짐
+
+        - gethostbyname함수
+            - 문자열 형태의 도메인 이름으로부터의 IP의 주소정보 획득 가능
+            
+            ```c
+            #include <netdb.h>
+            struct hostent * gethostbyname(const char * hostname);
+            // 성공 시 hostnet 구조체 변수 주소 값, 실패 시 NULL 포인터
+            ```
+        - hostnet 구조체
+            
+            ```c
+            struct hostent
+            {
+                char * h_name;          // 공식 도메인 이름
+                char ** aliases;        // 공식 도메인 이름 이외의 다른 도메인 이름
+                int h_addrtype;         // IP주소의 주소체계에 대한 정보
+                int h_length;           // 함수 호출 결과로 변환된 IP주소의 크기정보(IPv4:4, IPv6:16) 
+                char ** h_addr_list;    // 해당 도메인 이름에 대응하는 IP주소들의 배열
+            }
+            ```
+        - gethostbyname 함수
+            - IP 주소를 이용해서 도메인 정보를 얻어올 때 호출
+            
+            ```c
+            #include <netdb.h>
+            struct hostent * gethostbyaddr(const char * addr, socklen_t len, int family);
+            // 성공 시 hostent 구조체 변수의 주소 값, 실패 시 NULL 포인터 변환
+            // addr : IP 주소정보
+            // len : addr의 길이
+            // family : 주소체계(AF_INET, AF_INET6)
+            ```
+
+- 소켓의 다양한 옵션
+    - 소켓의 옵션과 입출력 비퍼의 크기
+        - 소켓의 옵션
+            - SOL_SOCKET : 소켓에 대한 일반적인 옵션
+            - IPPROTO_IP : IP 프로토콜 관련 사항
+            - IPPROTO_TCP : TCP 프로토콜 관련 사항
+        
+        - getsockopt & setsockopt 함수
+            - 소켓 옵션의 설정상태 참조(Get) 및 변경(Set)
+
+            ```c
+            #include <sys/socket.h>
+            int getsockopt(int sock, int level, int optname, void *optval, socklen_t *optlen);
+            // 성공 시 0, 실패 시 -1
+            ```
+            ```c
+            #include <sys/socket.h>
+            int setsockopt(int sock, int level, int optname, void *optval, socklen_t *optlen);
+            ```
+    - SO_REUSEADDR
+        - Time-wait : 연결 종료 시 마지막 패킷 전송 실패를 대비하기 위한 상태
+
+    - TCP_NODELAY
+        - Nalge알고리즘
+            - 앞서 전송한 데이터에 대한 ACK를 받아야만 다음 데이터를 전송하는 알고리즘
+            - 기본적으로 TCP 소켓은 Nagle알고리즘을 적용하여 데이터를 전송
+            - Nagle 알고리즘의 적용 여부에 따른 트래픽의 차이가 크지 않으면서도 적용하는 것보다 데이터 전송이 빠른 경우 알고리즘 중단
+            <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet006.png">
+
+- 멀티 프로세스 서버 구현
+    - 다중접속 서버의 구현 방법
+        - 멀티프로세스 기반 서버 : 다수이 프로세스를 생성하는 방식으로 서비스 제공
+        - 멀티플렉싱 기반 서버 : 입출력 대상을 묶어서 관리하는 방식으로 서비스 제공
+        - 멀티쓰레딩 기반 서버 : 클라이언트의 수만큼 쓰레드를 생성하는 방식으로 서비스 제공
+
+    - 프로세스의 이해
+        - 메모리 공간을 차지한 상태에서 실행중이 프로그램
+        - 프로세스 ID(PID) 
+            - 모든 프로세스는 생성되는 형태에 상관없이 운영체제로 부터 ID를 부여받음
+            - 2 이상의 정수형태, 숫자 1은 운영체제가 실행되자 마자 실행되는 프로세스에 할당
+
+        - fork 함수
+            - 프로세스의 생성을 위한 함수
+            - 호출한 프로세스의 복사본
+            - 원본가 복사본 모두 fork 함수 호출 이후 문장을 실행
+            - 부모 프로세스 : 원본 프로세스 -> fork 함수의 반환값 : 자식 프로세스의 ID
+            - 자식 프로세스 : 부모 프로세스를 통해 복사된 프로세스 -> fork 함수의 반환값 : 0
+
+            ```c
+            #include <unistd.h>
+            pid_t fork(void);
+            // 성공 시 프로세스 ID, 실패 시 -1 반환
+            ```
+
+        - 좀비(Zombie) 프로세스
+            - 실행이 완료되었지만 여전히 프로세스 테이블에 항목이 있는 프로세스
+            - 좀비 프로세스 생성 이유 : 자식프로세스를 제대로 소멸되지 않은 경우
+            - 소멸 방법 : 부모프로세스가 자식프로세스의 전달값을 요청해야함.
