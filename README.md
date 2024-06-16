@@ -577,10 +577,11 @@
         - 멀티플렉싱
             - 하나의 통신 채널을 통해서 둘 이상의 데이터(시그널)를 전송하는데 사용되는 기술
             - 물리적 장치의 효율성을 높이기 위해서 최소한의 물리적인 요소만 사용해서 최대한의 데이터를 전달하기 위해 사용되는 기술
-        
+
             <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet007.png">
 
 
+    - select 함수의 이해와 서버의 구현
         ```c
         #include <sys/select.h>
         #include <sys/time.h>
@@ -592,3 +593,4 @@
         // timeout : select함수 호출 이후에 무한정 블로킹 상태에 빠지지 않도록 타임아웃(time-out)을 설정하기 위한 인자
         // 반환값 : 오류 발생 시 -1, 타임 아웃 발생시 0, 관심대상으로 등록된 파일 디스크립터에 해당 관심에 관련된 변화 발생 시 0보다 큰 값 반환
         ```
+        
