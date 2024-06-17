@@ -586,6 +586,7 @@
         #include <sys/select.h>
         #include <sys/time.h>
         int select(int maxfd, fd_set *readset, fd_set *writeset, fd_set *expectset, const struct timeval * timeout);
+        // 
         // maxfd : 검사 대상이 되는 파일 디스크립터 수
         // readset : fd_set형 변수에 '수신된 데이터의 존재여부'에 관심 있는 파일 디스크립터 정보를 모두 등록
         // writeset : fd_set형 변수에 '블로킹 없는 데이터 전송의 가능여부'에 관심 있는 파일 디스크립터 정보를 모두 등록
@@ -593,4 +594,124 @@
         // timeout : select함수 호출 이후에 무한정 블로킹 상태에 빠지지 않도록 타임아웃(time-out)을 설정하기 위한 인자
         // 반환값 : 오류 발생 시 -1, 타임 아웃 발생시 0, 관심대상으로 등록된 파일 디스크립터에 해당 관심에 관련된 변화 발생 시 0보다 큰 값 반환
         ```
+## 5일차(24.06.15)
+- 다양한 입출력 함수
+    - send & recv 입출력 함수
+        - send 함수
+
+            ```c
+            #include <sys/socket.h>
+            ssize_t send(int sockfd, const void * buf, size_t nbytes, int flags);
+            // 성공시 전송된 바이트 수
+            // sockfd : 데이터 전송 대상과의 연결을 의미하는 소켓의 파일 디스크립터
+            // buf : 전송할 데이터를 저장하고 있는 버퍼의 주소값
+            // nbytes : 전송할 바이트 수
+            // flagts : 데이터 전송 시 적용할 옵션
+            ```
+        - recv 함수
+
+            ```c
+            # include<sys/socket.h>
+            ssize_t send(int sock fd, void * buf, size_t nbytes, int flags);
+            // 성공 시 수신한 바이트 수(EOF 전송 시 0), 실패 시 -1
+            // sock : 데이터 수신 대상과의 연결을 의미하는 소켓의 파일 디스크립터
+            // buf : 수신된 데이터를 저장할 버퍼의 주소값
+            // nbyte : 수신할 수 있는 최대 바이트 수
+            // flags : 데이터 수신 시 적용할 옵션
+            ```
         
+
+        - 리눅스 send&recv의 옵션(s:send, r:recv)
+            - send함수과 recv함수의 flags값
+            - MSG_OBB : 긴급 데이터(Out-of-band-data)의 전송을 위한 옵션(s,r)
+            - MSG_PEEK : 입력 버퍼에 수신된 데이터의 존재 유무 확인(r)
+            - MSG_DONTROUTE : 데이터 전송과정에서 라우팅 테이블을 참조하지 않을 것을 요구하는 옵션(s)
+            - MSG_DONTWAIT 입출력 함수 호출 과정에서 블로킹 되지 않을 것을 요구하기 위한 옵션(Non-Blocking)(s,r)
+            - MSG_WAITALL : 요청한 바이트 수에 해당하는 데이터가 전부 수신될 때까지 호출된 함수가 반환하는 것을 막는 옵션(r)
+
+        - Urgent mode의 동작원리
+            - 데이터를 수신하는 대상에게 데이터 처리를 독촉
+            - 전송순서가 그대로 유지된다는 TCP의 전송특성은 그대로 유지됨
+            - 긴급 메시지는 메시지 처리를 재촉하는데 의미가 있는 것이지 제한된 형태의 메시지를 긴급으로 전송하는데 의미가 있는 것은 아님
+
+        - offset
+            - 기본이 되는 위치를 바탕으로 상대적 위치를 표현하는 것
+            - 기준점으로부터 어느 쪽으로 얼마나 떨어져 있는지 나타내는 도구
+            
+            <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet008.png">
+        
+        - MSG_PEEK & MSG_DONTWAIT
+            - MSG_PEEK 옵션을 주고 recv를 호출하면 입력버퍼에 존재하는 데이터가 읽혀지더라도 입력버퍼에서 데이터가 지워지지 않음
+            - MSG_DONTWAIT 옵션과 함께 사용하여 블로킹 되지 않는 데이터의 존재 유무를 확인하기 위해 사용
+
+        - readv & writev 함수
+            - 데이터를 모아서 전송하고, 모아서 수신하는 기능의
+            
+            ```c
+            #include <sys/uio.h>
+            ssize_t writev(int filedes, const struct iovec * iov, int iovcnt);
+            // 성공 시 전송된 바이트 수, 실패 시 -1 반환
+            // filedes :데이터 전송의 목적지를 나타내는 소켓의 파일 디스크립터(소켓에만 제한되지않고 콘솔 대상의 파일 디스크립터도 전달 가능)
+            // iov : 전송할 데이터의 위치와 크기 정보를 담고 있는 구조체 iovec 배열의 주소값
+            // iovcnt : 주소 값이 가리키는 배열의 길이 정보
+
+            ssize_t readv(int filedes, const struct iovec * iov, int iovcnt);
+            // 성공 시 수신도니 바이트 수, 실패 시 -1 반환
+            // filedes :데이를 수신할 파일(혹은 소켓)의 파일 디스크립터
+            // iov : 데이터를 저장할 위치와 크기 정보를 담고 있는 구조체 iovec 배열의 주소값
+            // iovcnt : 주소 값이 가리키는 배열의 길이 정보
+
+            struct iovec
+            {
+                void * iov_base; // 버퍼의 주소정보
+                size_t iov_len; // 버퍼의 크기정보
+            }
+            ```
+- 소켓과 표준 입출력
+    - 표준입출력 함수의 장점
+        - 이식성(Portability)가 좋음
+        - 버퍼링을 통한 성능의 향상에 도움이 됨
+            - 소켓을 생성하면 기본적으로 운영체제에의해 입출력 버퍼가 생성
+            - 표준 입출력 함수를 사용하면 추가로 또 하나의 버퍼를 제공받음
+            - 소켓의 버퍼는 TCP의 구현을 위한 목적이 강하지만 입출력함수의 버퍼는 성능 향상만을 목적으로 함
+            - 버퍼링은 전송하는 데이터의 양과 데이터 이동 횟수 관점에서 성능이 우월함
+
+        - 표준 입출력 함수의 불편사항
+            - 양방향 통신이 어려움
+            - 읽기에서 쓰기로, 쓰기에서 읽기로 변경할 때 출력 버퍼를 비우는 fflush 함수를 사용해주어야함
+            - 파일 디스크립터를 FILE 구조체 포인터로 변경해야함
+    
+    - 소켓 기반에서의 표준 입출력 함수 사용
+
+- 입출력 스트림의 분리
+    - 입력 스트림과 출력 스트림의 분리
+        - 스트림 분리의 이점
+            - TCP의 입출력 루틴 분할
+                - 입력루틴(코드)과 출력루틴의 독립을 통한 구현의 편의성 증대
+                - 입력에 상관없이 출력이 가능하게 함으로 인해서 속도의 향상 기대
+
+            - fdopen 함수를 활용한 FILE 포인터 분할
+                - FILE 포인터는 읽기모드과 쓰기모드를 구분해야 하므로
+                - 읽기 모드와 쓰기 모드의 구분을 통한 구현의 편의성 증대
+                - 입력 버퍼와 출력 버퍼를 구분하여 버퍼링 기능의 향상
+        
+        - 스트림 분리 이후의 EOF에 대한 문제점
+            - 파일 포인터를 활용해 분할할 경우, Half-close의 구현이 어려움
+            - 출력모드의 파일포인터만 닫더라도 소켓 자체가 완전 종료 됨
+
+        <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet009.png">
+    
+    - 파일 디스크립터의 복사와 Half-close
+        - 파일 디스크립터의 복사
+            - 파일 디스크립터를 복사하여 각각의 FILE 포인터를 생성
+            - 프로세스의 복사를 동반하지 않는 원본과 복사본이 하나의 프로세스 내에 존재하는 형태
+            - dup & dup2
+                ```c
+                #include <unistd.h>
+                int dup(int fildes);
+                int dup2(int fildes, int fildes2);  // 복사된 파일 디스크립터의 정수값을 명시적으로 지정할 때 사용
+                // 성공 시 복사된 파일 디스크립터, 실패 시 -1
+                // fildes : 복사할 파일 디스크립터
+                // fildes2 : 명시적으로 지정할 파일 디스크립터의 정수 값
+                ```
+            -
