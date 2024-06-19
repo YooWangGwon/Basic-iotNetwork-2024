@@ -593,4 +593,257 @@
         // timeout : select함수 호출 이후에 무한정 블로킹 상태에 빠지지 않도록 타임아웃(time-out)을 설정하기 위한 인자
         // 반환값 : 오류 발생 시 -1, 타임 아웃 발생시 0, 관심대상으로 등록된 파일 디스크립터에 해당 관심에 관련된 변화 발생 시 0보다 큰 값 반환
         ```
+## 5일차(24.06.15)
+- 다양한 입출력 함수
+    - send & recv 입출력 함수
+        - send 함수
+
+            ```c
+            #include <sys/socket.h>
+            ssize_t send(int sockfd, const void * buf, size_t nbytes, int flags);
+            // 성공시 전송된 바이트 수
+            // sockfd : 데이터 전송 대상과의 연결을 의미하는 소켓의 파일 디스크립터
+            // buf : 전송할 데이터를 저장하고 있는 버퍼의 주소값
+            // nbytes : 전송할 바이트 수
+            // flagts : 데이터 전송 시 적용할 옵션
+            ```
+        - recv 함수
+
+            ```c
+            # include<sys/socket.h>
+            ssize_t send(int sock fd, void * buf, size_t nbytes, int flags);
+            // 성공 시 수신한 바이트 수(EOF 전송 시 0), 실패 시 -1
+            // sock : 데이터 수신 대상과의 연결을 의미하는 소켓의 파일 디스크립터
+            // buf : 수신된 데이터를 저장할 버퍼의 주소값
+            // nbyte : 수신할 수 있는 최대 바이트 수
+            // flags : 데이터 수신 시 적용할 옵션
+            ```
         
+
+        - 리눅스 send&recv의 옵션(s:send, r:recv)
+            - send함수과 recv함수의 flags값
+            - MSG_OBB : 긴급 데이터(Out-of-band-data)의 전송을 위한 옵션(s,r)
+            - MSG_PEEK : 입력 버퍼에 수신된 데이터의 존재 유무 확인(r)
+            - MSG_DONTROUTE : 데이터 전송과정에서 라우팅 테이블을 참조하지 않을 것을 요구하는 옵션(s)
+            - MSG_DONTWAIT 입출력 함수 호출 과정에서 블로킹 되지 않을 것을 요구하기 위한 옵션(Non-Blocking)(s,r)
+            - MSG_WAITALL : 요청한 바이트 수에 해당하는 데이터가 전부 수신될 때까지 호출된 함수가 반환하는 것을 막는 옵션(r)
+
+        - Urgent mode의 동작원리
+            - 데이터를 수신하는 대상에게 데이터 처리를 독촉
+            - 전송순서가 그대로 유지된다는 TCP의 전송특성은 그대로 유지됨
+            - 긴급 메시지는 메시지 처리를 재촉하는데 의미가 있는 것이지 제한된 형태의 메시지를 긴급으로 전송하는데 의미가 있는 것은 아님
+
+        - offset
+            - 기본이 되는 위치를 바탕으로 상대적 위치를 표현하는 것
+            - 기준점으로부터 어느 쪽으로 얼마나 떨어져 있는지 나타내는 도구
+            
+            <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet008.png">
+        
+        - MSG_PEEK & MSG_DONTWAIT
+            - MSG_PEEK 옵션을 주고 recv를 호출하면 입력버퍼에 존재하는 데이터가 읽혀지더라도 입력버퍼에서 데이터가 지워지지 않음
+            - MSG_DONTWAIT 옵션과 함께 사용하여 블로킹 되지 않는 데이터의 존재 유무를 확인하기 위해 사용
+
+        - readv & writev 함수
+            - 데이터를 모아서 전송하고, 모아서 수신하는 기능의
+            
+            ```c
+            #include <sys/uio.h>
+            ssize_t writev(int filedes, const struct iovec * iov, int iovcnt);
+            // 성공 시 전송된 바이트 수, 실패 시 -1 반환
+            // filedes :데이터 전송의 목적지를 나타내는 소켓의 파일 디스크립터(소켓에만 제한되지않고 콘솔 대상의 파일 디스크립터도 전달 가능)
+            // iov : 전송할 데이터의 위치와 크기 정보를 담고 있는 구조체 iovec 배열의 주소값
+            // iovcnt : 주소 값이 가리키는 배열의 길이 정보
+
+            ssize_t readv(int filedes, const struct iovec * iov, int iovcnt);
+            // 성공 시 수신도니 바이트 수, 실패 시 -1 반환
+            // filedes :데이를 수신할 파일(혹은 소켓)의 파일 디스크립터
+            // iov : 데이터를 저장할 위치와 크기 정보를 담고 있는 구조체 iovec 배열의 주소값
+            // iovcnt : 주소 값이 가리키는 배열의 길이 정보
+
+            struct iovec
+            {
+                void * iov_base; // 버퍼의 주소정보
+                size_t iov_len; // 버퍼의 크기정보
+            }
+            ```
+- 소켓과 표준 입출력
+    - 표준입출력 함수의 장점
+        - 이식성(Portability)가 좋음
+        - 버퍼링을 통한 성능의 향상에 도움이 됨
+            - 소켓을 생성하면 기본적으로 운영체제에의해 입출력 버퍼가 생성
+            - 표준 입출력 함수를 사용하면 추가로 또 하나의 버퍼를 제공받음
+            - 소켓의 버퍼는 TCP의 구현을 위한 목적이 강하지만 입출력함수의 버퍼는 성능 향상만을 목적으로 함
+            - 버퍼링은 전송하는 데이터의 양과 데이터 이동 횟수 관점에서 성능이 우월함
+
+        - 표준 입출력 함수의 불편사항
+            - 양방향 통신이 어려움
+            - 읽기에서 쓰기로, 쓰기에서 읽기로 변경할 때 출력 버퍼를 비우는 fflush 함수를 사용해주어야함
+            - 파일 디스크립터를 FILE 구조체 포인터로 변경해야함
+    
+    - 소켓 기반에서의 표준 입출력 함수 사용
+
+- 입출력 스트림의 분리
+    - 입력 스트림과 출력 스트림의 분리
+        - 스트림 분리의 이점
+            - TCP의 입출력 루틴 분할
+                - 입력루틴(코드)과 출력루틴의 독립을 통한 구현의 편의성 증대
+                - 입력에 상관없이 출력이 가능하게 함으로 인해서 속도의 향상 기대
+
+            - fdopen 함수를 활용한 FILE 포인터 분할
+                - FILE 포인터는 읽기모드과 쓰기모드를 구분해야 하므로
+                - 읽기 모드와 쓰기 모드의 구분을 통한 구현의 편의성 증대
+                - 입력 버퍼와 출력 버퍼를 구분하여 버퍼링 기능의 향상
+        
+        - 스트림 분리 이후의 EOF에 대한 문제점
+            - 파일 포인터를 활용해 분할할 경우, Half-close의 구현이 어려움
+            - 출력모드의 파일포인터만 닫더라도 소켓 자체가 완전 종료 됨
+
+        <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet009.png">
+    
+    - 파일 디스크립터의 복사와 Half-close
+        - 파일 디스크립터의 복사
+            - 파일 디스크립터를 복사하여 각각의 FILE 포인터를 생성
+            - 프로세스의 복사를 동반하지 않는 원본과 복사본이 하나의 프로세스 내에 존재하는 형태
+            - dup & dup2
+                ```c
+                #include <unistd.h>
+                int dup(int fildes);
+                int dup2(int fildes, int fildes2);  // 복사된 파일 디스크립터의 정수값을 명시적으로 지정할 때 사용
+                // 성공 시 복사된 파일 디스크립터, 실패 시 -1
+                // fildes : 복사할 파일 디스크립터
+                // fildes2 : 명시적으로 지정할 파일 디스크립터의 정수 값
+                ```
+- epoll
+    - epoll의 이해와 활용
+        - select 기반의 IO 멀티 플렉싱이 느린 이유
+            - select 함수 호출 이후에 항상 등장하는, 모든 파일 디스크립터를 대상으로 하는 반복문
+            - select 함수를 호출할 때마다 인자로 매번 전달해야 하는 관찰대상에 대한 정보들 -> 매번 운영체제에게 전달
+
+        - select 함수가 사용되는 경우
+            - 서버의 접속자 수가 많지 않음
+            - 다양한 운영체제에서 운영 가능해야 함
+
+        - epoll 함수 장점
+            - 상태변화의 확인을 위한, 전체 파일 디스크립터를 대상으로 하는 반복문이 필요없음
+            - 관찰대상의 정보를 매번 전달할 필요 없음
+        
+        - epoll 기반 서버 구현에 필요한 함수
+            - epoll_create : epoll 파일 디스크립터 저장소 생성
+            - epoll_ctl : 저장소에 파일 디스크립터 등록 및 삭제
+            - epoll_wait : select 함수와 마찬가지로 파일 디스크립터의 변화를 대기
+
+        - epoll_create
+            
+            ```c
+            #include <sys/epoll.h>
+            int epoll_create(int size);
+            // 성공 시 epoll 파일 디스크립터, 실패시 -1 반환
+            // size : epoll 인스턴스의 크기 정보
+            ``` 
+
+        - epoll_ctl
+
+            ```c
+            #include <sys/epoll.h>
+            int epoll_ctl(int epfd, int op, int fd, struct epoll_event *event);
+            // 성공시 0, 실패시 -1
+            // epfd : 관찰대상을 등록할 epoll 인스턴스의 파일 디스크립터
+            // op : 관찰 대상의 추가, 삭제 또는 변경 여부 지정
+            // fd : 등록할 관찰대상의 파일 디스크립터
+            // event : 관찰대상의 관찰 이벤트 유형
+            ```
+
+            - op에 전달 가능한 상수
+                - EPOLL_CTL_ADD : 파일 디스크립터를 epoll 인스턴스에 등록
+                - EPOLL_CTL_DEL : 파일 디스크립터를 epoll 인스턴스에서 삭제
+                - EPOLL_CTL_MOD : 등록된 파일 디스크립터의 이벤트 발생상황을 변경
+
+            - event에 저장 가능한 상수
+                - EPOLLIN : 수신할 데이터가 존재하는 상황
+                - EPOLLOUT : 출력버퍼가 비워져서 당장 데이터를 전송할 수 있는 상황
+                - EPOLLPRI : OOB 데이터가 수신된 상황
+                - EPOLLET : 이벤트의 감지를 엣지 트리거 방식으로 동작
+
+        - epoll
+
+    - 레벨 트리거(Level Trigger) & 엣지 트리거(Edge Trigger)
+        - 레벨 트리거 : 입력 버퍼에 데이터가 남아있는 동안에 계속해서 이벤트가 등록됨
+        - 엣지 트리거
+            - 데이터가 수신되면 딱 한번 이벤트가 등록됨
+            - 데이터의 수신과 데이터가 처리되는 시점을 분리할 수 있음
+
+        - 레벨 트리거와 엣지 트리거의 차이
+            - 이벤트가 발생하는 시점
+            - 레벨 트리거 : 상태 변수의 현재 상황을 기준
+            - 엣지 트리거 : 상태 변수가 변하는 순간(과정)을 기준
+
+        <img src="https://raw.githubusercontent.com/YooWangGwon/Basic-iotNetwork-2024/main/images/iotNet010.png">
+
+
+- 멀티쓰레드 기반의 서버구현
+    - 쓰레드의 이론적 이해
+        - 멀티프로세스 기반의 단점
+            - 프로세스 생성이라는 부담스러운 작업과정을 거침
+            - 두 프로세스 사이에서의 데이터 교환을 위해 별도의 IPC 기법을 적용해야 함
+
+        - 쓰레드 
+            - 프로세스 관점에서 별도의 실행흐름을 구성하는 단위
+            - 멀티 프로세스의 여러 단점을 최소화하기 위해 설계된 일종의 '경량화 된 프로세스'
+            - 하나의 프로세스 안에 쓰레드가 생성되어 해당 프로세스의 힙(heap) 영역은 공유하고 스택영역만 쓰레드 별로 별도로 할당함
+
+        - 쓰레드의 장점
+            - 쓰레드의 생성 및 컨텍스트 스위칭은 프로세스의 생성 및 컨텍스트 스위칭보다 빠름
+            - 쓰레드 사이에서의 데이터 교환에는 특별한 기법이 필요치 않음
+
+    - 쓰레드의 생성 및 실행
+        - 쓰레드의 생성과 실행흐름의 구성
+            ```c
+            #include <pthread.h>
+            int pthread_create(pthread_t *restrict thread, const pthread_attr_t *restrict attr, void *(*start_routine)(void*), void *restrict arg)
+            // 성공 시 0, 실패 시 0 이외의 값 
+            // thread : 생성할 쓰레드의 ID 저장을 위한 변수의 주소값
+            // attr : 쓰레드에 부여할 특성 정보의 전달을 위한 매개변수, NULL 전달 시 기본특성
+            // start_routine : 쓰레드의 main 함수 역할을 하는, 별도 실행흐름의 시작이 되는 함수의 주소값 저달
+            // arg : 전달할 인자의 정보를 담고 있는 변수의 주소 값 전달
+            ```
+
+            ```c
+            #include <pthread.h>
+            int pthread_join(pthread_t thread, void **status);
+            // 성공 시 0, 실패 시 0 이외의 값
+            // thread : 이 매개변수에 전달되는 ID의 쓰레드가 종료될 때 까지 함수는 반환되지 않음
+            // status : 쓰레드의 main 함수가 반환하는 값이 저장될 포인터 변수의 주소 값을 전달
+            ```
+        - 임계영역 내에서 호출이 가능한 함수
+            - 임계영역 : 함수 내에 둘 이상의 쓰레드가 동시에 실행하면 문제를 일으키는 하나 이상의 문장으로 묶여있는 코드불룩
+            - 쓰레드에 안전한 함수(Thread-safe function) : 둘 이상의 쓰레드에 의해서 동시에 호출 및 실행되어도 문제를 일으키지 않는 함수
+            - 쓰레드에 불안전한 함수(Thread-unsafe function) : 동시 호출 시 문제가 발생할 수 있는 함수
+
+    - 쓰레드의 동기화
+        - 동기화가 필요한 경우
+            - 동일한 메모리 영역으로의 동시 접근이 발생하는 상황
+            - 동일한 메모리 영역에 접근하는 쓰레드의 실행순서를 지정해야 하는 상황
+
+        - 뮤텍스(Mutex)
+            - Mutual Exclusion의 줄임말 -> 쓰레드의 동시 접근을 허용하지 않는다는 의미
+            - 쓰레드의 동기접근에 대한 해결책
+                ```c
+                #include <pthread.h>
+                pthread_mutex_t mutex;
+                int pthread_mutex_init(pthread_mutext_t *mutex, const pthread_mutexattr_t *attr);
+                int pthread_mutex_destroy(pthread_mutex_t *mutex);
+                int pthread_mutex_lock(pthread_mutext_t *mutex);
+                int pthread_mutex_unlock(pthread_mutext_t *mutex);
+                // 성공시 0, 실패 시 0 이외의 값 반환
+                // mutex : 뮤텍스의 참조 값 저장을 위한 변수의 주소 값
+                // attr : 생성하는 뮤텍스의 특성정보를 담고 있는 변수의 주소값 전달, 별도의 특성을 지정하지 않는 경우 NULL 전달
+                ```
+        
+        - 세마포어(Semaphore)
+            - 두 개의 원자적 함수로 조작되는 정수 변수로서, 멀티프로그래밍 환경에서 공유 자원에 대한 접근을 제한하는 방법으로 사용됨
+            - 0과 1만을 사용 -> '바이너리 세마포어'라고도 부름
+            
+            ```c
+            #include <semaphore>
+            int sem_init(sem_t)
+            ```
